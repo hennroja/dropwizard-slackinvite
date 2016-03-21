@@ -1,0 +1,77 @@
+apply plugin: 'java'
+apply plugin: 'gradle-one-jar'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+project.ext {
+    dropwizardVersion = '0.9.2'
+}
+
+// UTF-8 should be standard by now. So use it!
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.github.rholder:gradle-one-jar:1.0.4'
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile (
+       'io.dropwizard:dropwizard-core:' + dropwizardVersion,
+       'io.dropwizard:dropwizard-auth:' + dropwizardVersion,
+       'io.dropwizard:dropwizard-assets:' + dropwizardVersion,
+       'io.dropwizard:dropwizard-hibernate:' + dropwizardVersion,
+       'io.dropwizard:dropwizard-migrations:' + dropwizardVersion,
+       'com.h2database:h2:1.4.191',
+    )
+}
+
+configurations {
+    all*.exclude group: 'javax.inject', module: 'javax.inject'
+}
+
+startScripts {
+    mainClassName = project.mainClassName
+}
+
+task oneJar(type: OneJar) {
+    mainClass = project.mainClassName
+    useStable = false
+}
+
+// Configure the run task to start the Dropwizard service
+run {
+    args 'server', './src/dist/config/config.yml'
+    main = project.mainClassName
+}
+
+// TODO: make it work
+task(migrate) << {
+    args 'db', 'migrate', './src/dist/config/config.yml'
+    main = project.mainClassName
+}
+
+
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.4'
+}
+
+artifacts {
+    oneJar
+}
+
+build.dependsOn 'oneJar'
